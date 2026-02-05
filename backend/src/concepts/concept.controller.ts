@@ -15,7 +15,7 @@ import { CreateConceptDto } from './create-concept.dto';
 import { ConceptMapper } from './concept.mapper';
 import { ConceptResponseDto } from './concept.response.dto';
 import { ConceptsService } from './concept.service';
-
+import { Types } from 'mongoose'
 type RequestWithUser = Request & { user?: { clerkId?: string } };
 
 @Controller('concepts')
@@ -25,12 +25,12 @@ export class ConceptsController {
     private readonly conceptsService: ConceptsService,
     private readonly usersService: UsersService,
     private readonly subjectsService: SubjectsService,
-  ) {}
+  ) { }
 
   @Post('bulk')
   async createBulk(
     @Req() req: RequestWithUser,
-    @Body() dtos: CreateConceptDto[],
+    @Body() body: { subjectId: string; concepts: CreateConceptDto[] },
   ): Promise<ConceptResponseDto[]> {
     const clerkId = req.user?.clerkId;
     if (!clerkId) {
@@ -42,20 +42,26 @@ export class ConceptsController {
       throw new NotFoundException('User not found');
     }
 
-    if (dtos.length === 0) {
-      return [];
-    }
+    const { subjectId, concepts } = body;
 
-    const subjectId = dtos[0]?.prerequisites;
-    if (!subjectId) {
+    if (!subjectId || !Types.ObjectId.isValid(subjectId)) {
       throw new NotFoundException('Subject not found');
     }
 
-    const concepts = await this.conceptsService.createBulkConcepts(
+    const subject = await this.subjectsService.getSubjectById(
       user._id,
-      dtos,
+      new Types.ObjectId(subjectId),
     );
 
-    return concepts.map((concept:any) => ConceptMapper.toResponse(concept));
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    const created = await this.conceptsService.createBulkConcepts(
+      new Types.ObjectId(subjectId),
+      concepts,
+    );
+    return created.map(ConceptMapper.toResponse);
   }
+
 }

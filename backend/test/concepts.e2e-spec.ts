@@ -6,6 +6,8 @@ import request from 'supertest';
 import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { User } from '../src/users/user.schema';
+import { Subject } from 'src/subjects/subject.schema';
+import { Concept } from 'src/concepts/concept.schema';
 
 class MockClerkAuthGuard {
   canActivate(context: ExecutionContext) {
@@ -17,7 +19,7 @@ class MockClerkAuthGuard {
 
 describe('Concepts E2E', () => {
   let app: INestApplication;
-
+  let subjectId: string;
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
@@ -36,6 +38,25 @@ describe('Concepts E2E', () => {
       { clerkId: 'test-clerk-id', name: 'Test User' },
       { upsert: true, new: true },
     );
+    const subjectModel = app.get<Model<any>>(getModelToken(Subject.name));
+    const conceptModel = app.get<Model<any>>(getModelToken(Concept.name));
+
+    await subjectModel.deleteMany({});
+    await conceptModel.deleteMany({});
+    const subjectRes = await request(app.getHttpServer())
+      .post('/api/subjects')
+      .send({
+        name: 'Math',
+        examDate: new Date().toISOString(),
+        isBacklog: false,
+        priorityWeight: 1,
+      });
+
+    expect([200, 201]).toContain(subjectRes.status);
+    subjectId = subjectRes.body.id;
+    expect(subjectId).toBeDefined();
+    // expect(subjectRes.body.userId).toBeDefined();
+
   });
 
   afterAll(async () => {
@@ -45,24 +66,28 @@ describe('Concepts E2E', () => {
   it('POST /api/concepts/bulk creates concepts', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/concepts/bulk')
-      .send([
-        {
-          name: 'Derivatives',
-          difficulty: 3,
-          estimatedMinutes: 45,
-          prerequisites: ['p1'],
-        },
-        {
-          name: 'Integrals',
-          difficulty: 4,
-          estimatedMinutes: 60,
-          prerequisites: ['p1'],
-        },
-      ]);
+      .send({
+        subjectId, // ← MUST be a real ObjectId created in THIS test
+        concepts: [
+          {
+            name: 'Derivatives',
+            difficulty: 3,
+            estimatedMinutes: 45,
+            prerequisites: [],
+          },
+          {
+            name: 'Integrals',
+            difficulty: 4,
+            estimatedMinutes: 60,
+            prerequisites: [],
+          },
+        ],
+      });
 
     expect([200, 201]).toContain(res.status);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(2);
     expect(res.body[0].name).toBe('Derivatives');
   });
+
 });

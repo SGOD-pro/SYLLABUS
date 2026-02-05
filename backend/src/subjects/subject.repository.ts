@@ -34,4 +34,5 @@ export class SubjectsRepository {
   ): Promise<SubjectDocument | null> {
     return this.subjectModel.findOne({ _id: subjectId, userId }).exec();
   }
+  
 }

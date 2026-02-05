@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
+import { Types, type Model } from 'mongoose';
 import { StudySession, type StudySessionDocument } from './session.schema';
 
 export interface CreateStudySessionInput {
@@ -21,7 +21,7 @@ export class SessionRepository {
   ) {}
 
   async findByUserId(userId: string): Promise<StudySession[]> {
-    return this.sessionModel.find({ userId }).exec();
+    return this.sessionModel.find({ userId:new Types.ObjectId(userId) }).exec();
   }
 
   async create(input: CreateStudySessionInput): Promise<StudySession> {

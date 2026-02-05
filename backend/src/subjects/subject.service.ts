@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Type } from '@nestjs/common';
 import type { Types } from 'mongoose';
 import { SubjectsRepository } from './subject.repository';
 import { CreateSubjectDto } from './create-subject.dto';
 
 @Injectable()
 export class SubjectsService {
-  constructor(private readonly subjectsRepo: SubjectsRepository) {}
+  constructor(private readonly subjectsRepo: SubjectsRepository) { }
 
   async createSubject(userId: Types.ObjectId, dto: CreateSubjectDto) {
     return this.subjectsRepo.create({
@@ -19,5 +19,11 @@ export class SubjectsService {
 
   async getSubjects(userId: Types.ObjectId) {
     return this.subjectsRepo.findByUserId(userId);
+  }
+  async getSubjectById(
+    userId: Types.ObjectId,
+    subjectId: Types.ObjectId,
+  ) {
+    return this.subjectsRepo.findByIdAndUser(subjectId,userId);
   }
 }

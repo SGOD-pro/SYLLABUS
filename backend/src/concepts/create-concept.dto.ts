@@ -1,6 +1,9 @@
-import { IsArray, IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
+import { IsArray, IsInt, IsOptional, IsString, Min, Max, IsMongoId } from 'class-validator';
 
 export class CreateConceptDto {
+  @IsMongoId()
+  subjectId: string; 
+  
   @IsString()
   name!: string;
 

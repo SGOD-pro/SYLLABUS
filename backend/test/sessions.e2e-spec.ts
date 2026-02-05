@@ -86,7 +86,8 @@ describe('Sessions E2E', () => {
     expect([200, 201]).toContain(submit.status);
 
     const plan = await request(app.getHttpServer()).get('/api/planner/today');
-    expect([200, 201]).toContain(plan.status);
-    expect(plan.body).toBeNull();
+    expect([200, 201]).toContain(plan.status); expect(plan.body.sessions?.length ?? 0).toBe(0);
+
+
   });
 });

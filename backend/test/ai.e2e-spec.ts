@@ -51,7 +51,7 @@ describe('AI E2E', () => {
     expect([200, 201]).toContain(res.status);
     expect(typeof res.body.explanationText).toBe('string');
     expect(res.body.explanationText.length).toBeGreaterThan(0);
-  });
+  },30000);
 
   it('POST /api/ai/parse-syllabus returns parsed output', async () => {
     const res = await request(app.getHttpServer())

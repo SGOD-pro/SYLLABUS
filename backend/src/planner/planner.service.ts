@@ -75,7 +75,7 @@ export class PlannerService {
     };
 
     const plan = generatePlan(plannerInput);
-
+    
     return this.studyPlanRepository.create({
       userId: user._id.toString(),
       date: plan.date,
@@ -89,7 +89,7 @@ export class PlannerService {
       throw new NotFoundException('User not found');
     }
 
-    return this.studyPlanRepository.findByUserIdAndDate(
+    return await this.studyPlanRepository.findByUserIdAndDate(
       user._id.toString(),
       today,
     );
