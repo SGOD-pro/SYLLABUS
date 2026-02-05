@@ -1,26 +1,144 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+/* Keep this for shadcn compatibility */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* 1. BORDER RADIUS MAPPING */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* 2. COLORS (Minimalist Paper/Ink Theme) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Panic Mode Accent */
+  --color-panic: var(--panic);
+  --color-panic-foreground: var(--panic-foreground);
+
+  /* 3. KEYFRAMES & ANIMATIONS */
+  /* We define the keyframes inside the CSS */
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes pulse-subtle {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  /* Map the keyframes to animation classes */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-pulse-subtle: pulse-subtle 2s ease-in-out infinite;
+
+  /* 4. TYPOGRAPHY */
+  --font-sans: "Inter",
+  ui-sans-serif,
+  system-ui,
+  sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* 5. VARIABLE DEFINITIONS */
+:root {
+  --radius: 0.75rem;
+
+  /* Senior Student Desk Palette (Light Mode) */
+  --background: oklch(0.98 0.005 60);
+  /* #F9F9F8 - Off-white */
+  --foreground: oklch(18.992% 0.00517 248.2);
+  /* #2F2F2F - Slate */
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(20.714% 0.00757 248.269);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(22.024% 0.00746 248.248);
+
+  --primary: oklch(0.45 0.15 250);
+  /* Study Blue */
+  --primary-foreground: oklch(1 0 0);
+
+  --panic: oklch(0.77 0.18 75);
+  /* Amber Glow */
+  --panic-foreground: oklch(0.2 0.05 75);
+
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: oklch(0.25 0.01 250);
+  --muted: oklch(96.809% 0.00975 253.021);
+  --muted-foreground: oklch(37.15% 0.00004 271.152);
+  --accent: oklch(96.855% 0.00805 254.093);
+  --accent-foreground: oklch(39.208% 0.00527 236.909);
+
+  --destructive: oklch(0.57 0.24 27);
+  --border: oklch(0.9 0.01 250);
+  --input: oklch(0.145 0 0);
+  --ring: oklch(50.323% 0.00006 271.152);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(100% 0.00011 271.152);
+  --card: oklch(0% 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0% 0 0);
+  /* Add other dark mode colors as needed following the light mode structure */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .panic-glow {
+    box-shadow: 0 0 20px hsl(var(--panic) / 0.3), 0 0 40px hsl(var(--panic) / 0.1);
+    border-color: hsl(var(--panic));
+  }
 }
