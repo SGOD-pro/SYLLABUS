@@ -1,5 +1,11 @@
 // SYLLABUS - Core TypeScript Interfaces
-
+type ApiOptions = {
+  method?: "GET" | "POST" | "PATCH" | "DELETE"
+  body?: any
+  token?: string | null
+  getToken?: () => Promise<string | null>
+  isMultipart?: boolean
+}
 type Degree = 'B.Tech' | 'M.Tech' | 'MSc' | 'BSc';
 
 type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'night';

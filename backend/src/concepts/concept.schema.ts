@@ -1,25 +1,29 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { Subject } from 'src/subjects/subject.schema';
 
 @Schema({ versionKey: false })
 export class Concept {
-  @Prop({ type: Types.ObjectId, ref: 'Subject', required: true })
-  subjectId!: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: Subject.name, required: true })
+  subjectId: Types.ObjectId;
 
   @Prop({ required: true })
-  name!: string;
+  name: string;
 
   // @Prop({required: true,unique:true,index:true})
   // email:string
   
   @Prop({ required: true, min: 1, max: 5 })
-  difficulty!: number;
+  difficulty: number;
 
   @Prop({ required: true })
-  estimatedMinutes!: number;
+  estimatedMinutes: number;
 
-  @Prop({ type: [Types.ObjectId], ref: 'Concept', default: [] })
-  prerequisites!: Types.ObjectId[];
+  @Prop({ type: [Types.ObjectId], ref: 'concepts', default: [] })
+  prerequisites: Types.ObjectId[];
+
+  @Prop({ default: false })
+  systemDefined: boolean;
 }
 
 export type ConceptDocument = Concept & Document;

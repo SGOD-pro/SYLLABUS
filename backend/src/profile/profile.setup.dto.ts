@@ -10,7 +10,7 @@ import {
 export class ProfileSetupDto {
   @IsInt()
   @Min(1)
-  dailyMinutes!: number;
+  dailyMinutes: number;
 
   @IsArray()
   @IsString({ each: true })
@@ -19,10 +19,10 @@ export class ProfileSetupDto {
 
   @IsInt()
   @Min(1)
-  fatigueThreshold!: number;
+  fatigueThreshold: number;
 }
 
 export class ProfilePanicToggleDto {
   @IsBoolean()
-  enabled!: boolean;
+  enabled: boolean;
 }

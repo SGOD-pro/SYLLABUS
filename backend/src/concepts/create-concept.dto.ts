@@ -5,16 +5,16 @@ export class CreateConceptDto {
   subjectId: string; 
   
   @IsString()
-  name!: string;
+  name: string;
 
   @IsInt()
   @Min(1)
   @Max(5)
-  difficulty!: number;
+  difficulty: number;
 
   @IsInt()
   @Min(1)
-  estimatedMinutes!: number;
+  estimatedMinutes: number;
 
   @IsArray()
   @IsString({ each: true })

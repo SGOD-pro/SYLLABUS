@@ -1,13 +1,12 @@
 // Subjects Step - Add subjects with exam dates
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { v4 as uuidv4 } from 'uuid';
 import {
   Select,
   SelectContent,
@@ -21,8 +20,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-// import { Degree, Subject } from '@/types';
-import { getSubjectsForDegree, createSubjectFromTemplate } from '@/data/subjects';
+import { useAuth } from '@clerk/nextjs';
+import { api } from '@/lib/api-client';
+import { API_ROUTES } from '@/lib/api-routes';
 import {
   BookOpen,
   ArrowRight,
@@ -51,8 +51,10 @@ interface SubjectEntry {
 }
 
 export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: SubjectsStepProps) => {
-  const templates = useMemo(() => getSubjectsForDegree(degree), [degree]);
-  const templateNames = useMemo(() => templates.map((t) => t.name), [templates]);
+  const { getToken } = useAuth();
+  const [catalogSubjects, setCatalogSubjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+  const templateNames = useMemo(() => catalogSubjects.map((t) => t.name), [catalogSubjects]);
 
   const [subjects, setSubjects] = useState<SubjectEntry[]>(() => {
     if (defaultSubjects?.length) {
@@ -70,6 +72,50 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customSubjectName, setCustomSubjectName] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (templateNames.length === 0) return;
+    setSubjects((prev) =>
+      prev.map((s) => ({
+        ...s,
+        isCustom: !templateNames.includes(s.name),
+      }))
+    );
+  }, [templateNames]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const run = async () => {
+      setIsLoadingCatalog(true);
+      try {
+        const res = await api<
+          Array<{
+            id: string;
+            name: string;
+          }>
+        >(API_ROUTES.SUBJECTS.GET, { getToken });
+
+        if (isMounted && Array.isArray(res)) {
+          const mapped = res
+            .filter((s) => s && typeof s.id === 'string' && typeof s.name === 'string')
+            .map((s) => ({ id: s.id, name: s.name }));
+          setCatalogSubjects(mapped);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch subjects', err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingCatalog(false);
+        }
+      }
+    };
+
+    run();
+    return () => {
+      isMounted = false;
+    };
+  }, [getToken]);
 
   const availableTemplates = templateNames.filter(
     (name) => !subjects.some((s) => s.name === name)
@@ -77,6 +123,8 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
 
   const addSubjectFromTemplate = () => {
     if (!selectedTemplate) return;
+    const catalog = catalogSubjects.find((s) => s.name === selectedTemplate);
+    if (!catalog) return;
 
     const defaultDate = new Date();
     defaultDate.setDate(defaultDate.getDate() + 30);
@@ -84,8 +132,8 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
     setSubjects((prev) => [
       ...prev,
       {
-        id: uuidv4(),
-        name: selectedTemplate,
+        id: catalog.id,
+        name: catalog.name,
         examDate: defaultDate,
         isBacklog: false,
         isCustom: false,
@@ -94,24 +142,46 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
     setSelectedTemplate('');
   };
 
-  const addCustomSubject = () => {
+  const addCustomSubject = async () => {
     if (!customSubjectName.trim()) return;
 
     const defaultDate = new Date();
     defaultDate.setDate(defaultDate.getDate() + 30);
 
-    setSubjects((prev) => [
-      ...prev,
-      {
-        id: uuidv4(),
-        name: customSubjectName.trim(),
-        examDate: defaultDate,
-        isBacklog: false,
-        isCustom: true,
-      },
-    ]);
-    setCustomSubjectName('');
-    setShowCustomInput(false);
+    try {
+      const created = await api<{
+        id: string;
+        name: string;
+        examDate: string;
+        isBacklog: boolean;
+      }>(API_ROUTES.SUBJECTS.CREATE, {
+        method: 'POST',
+        body: {
+          name: customSubjectName.trim(),
+          examDate: defaultDate.toISOString(),
+          isBacklog: false,
+          priorityWeight: 1.0,
+        },
+        getToken,
+      });
+
+      if (created?.id && created?.name) {
+        setSubjects((prev) => [
+          ...prev,
+          {
+            id: created.id,
+            name: created.name,
+            examDate: new Date(created.examDate),
+            isBacklog: Boolean(created.isBacklog),
+            isCustom: true,
+          },
+        ]);
+        setCustomSubjectName('');
+        setShowCustomInput(false);
+      }
+    } catch (err) {
+      console.warn('Failed to create subject', err);
+    }
   };
 
   const removeSubject = (id: string) => {
@@ -124,31 +194,54 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
     );
   };
 
-  const handleSubmit = () => {
-    const fullSubjects: Subject[] = subjects.map((entry) => {
-      const template = templates.find((t) => t.name === entry.name);
-      // Calculate priorityWeight based on backlog status (KT = 1.5, normal = 1.0)
-      const priorityWeight = entry.isBacklog ? 1.5 : 1.0;
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    const fullSubjects: Subject[] = await Promise.all(
+      subjects.map(async (entry) => {
+        const priorityWeight = entry.isBacklog ? 1.5 : 1.0;
+        let concepts: Concept[] = [];
+        try {
+          const conceptsRes = await api<any[]>(
+            API_ROUTES.CONCEPTS.BY_SUBJECT(entry.id),
+            { getToken }
+          );
+          if (Array.isArray(conceptsRes)) {
+            concepts = conceptsRes
+              .filter(
+                (c) =>
+                  c &&
+                  typeof c.id === 'string' &&
+                  typeof c.name === 'string' &&
+                  typeof c.difficulty === 'number' &&
+                  typeof c.estimatedMinutes === 'number'
+              )
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                difficulty: c.difficulty,
+                estimatedMinutes: c.estimatedMinutes,
+                isHighWeight: typeof c.isHighWeight === 'boolean' ? c.isHighWeight : false,
+                subjectId: entry.id,
+                prerequisites: Array.isArray(c.prerequisites) ? c.prerequisites : [],
+              }));
+          }
+        } catch (err) {
+          console.warn('Failed to fetch concepts', err);
+        }
 
-      if (template) {
-        const subject = createSubjectFromTemplate(template, entry.examDate);
-        subject.id = entry.id;
-        subject.isBacklog = entry.isBacklog;
-        (subject as any).priorityWeight = priorityWeight;
-        return subject;
-      }
-      // Custom subject without predefined concepts
-      return {
-        id: entry.id,
-        name: entry.name,
-        examDate: entry.examDate,
-        isBacklog: entry.isBacklog,
-        creditWeight: 4,
-        concepts: [],
-        priorityWeight,
-      };
-    });
+        return {
+          id: entry.id,
+          name: entry.name,
+          examDate: entry.examDate,
+          isBacklog: entry.isBacklog,
+          creditWeight: 4,
+          concepts,
+          priorityWeight,
+        };
+      })
+    );
 
+    setIsSubmitting(false);
     onSubmit(fullSubjects);
   };
 
@@ -179,7 +272,7 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
             </Select>
             <Button
               onClick={addSubjectFromTemplate}
-              disabled={!selectedTemplate}
+              disabled={!selectedTemplate || isLoadingCatalog}
               size="icon"
             >
               <Plus className="w-4 h-4" />
@@ -308,7 +401,7 @@ export const SubjectsStep = ({ degree, defaultSubjects, onSubmit, onBack }: Subj
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={subjects.length === 0}
+            disabled={subjects.length === 0 || isSubmitting}
             className="flex-1"
           >
             Continue

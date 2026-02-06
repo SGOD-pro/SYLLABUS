@@ -28,4 +28,13 @@ async createBulkConcepts(
   async getConceptsBySubject(subjectId: Types.ObjectId) {
     return this.conceptsRepo.findBySubjectId(subjectId);
   }
+
+  async getConceptById(conceptId: string) {
+    return this.conceptsRepo.findById(new Types.ObjectId(conceptId));
+  }
+
+  async getConceptsByIds(conceptIds: string[]) {
+    const ids = conceptIds.map((id) => new Types.ObjectId(id));
+    return this.conceptsRepo.findByIds(ids);
+  }
 }

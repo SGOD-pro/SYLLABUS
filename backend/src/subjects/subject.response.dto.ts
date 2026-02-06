@@ -2,17 +2,17 @@ import { IsBoolean, IsDateString, IsInt, IsString } from 'class-validator';
 
 export class SubjectResponseDto {
   @IsString()
-  id!: string;
+  id: string;
 
   @IsString()
-  name!: string;
+  name: string;
 
   @IsDateString()
-  examDate!: string;
+  examDate: string;
 
   @IsBoolean()
-  isBacklog!: boolean;
+  isBacklog: boolean;
 
   @IsInt()
-  priorityWeight!: number;
+  priorityWeight: number;
 }

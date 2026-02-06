@@ -2,10 +2,10 @@ import { IsArray, IsBoolean, IsInt, IsOptional, IsString } from 'class-validator
 
 export class ProfileResponseDto {
   @IsString()
-  id!: string;
+  id: string;
 
   @IsInt()
-  dailyMinutes!: number;
+  dailyMinutes: number;
 
   @IsArray()
   @IsString({ each: true })
@@ -13,8 +13,8 @@ export class ProfileResponseDto {
   preferredSlots?: string[];
 
   @IsInt()
-  fatigueThreshold!: number;
+  fatigueThreshold: number;
 
   @IsBoolean()
-  panicMode!: boolean;
+  panicMode: boolean;
 }

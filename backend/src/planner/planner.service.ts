@@ -89,18 +89,104 @@ export class PlannerService {
       throw new NotFoundException('User not found');
     }
 
-    return await this.studyPlanRepository.findByUserIdAndDate(
+    const plan = await this.studyPlanRepository.findByUserIdAndDate(
       user._id.toString(),
       today,
     );
+
+    if (!plan) {
+      return null;
+    }
+
+    try {
+      const profile = await this.profileService.getProfile(user._id);
+      const subjects = await this.subjectsService.getSubjects(user._id);
+      const conceptsBySubject = await Promise.all(
+        subjects.map((subject) => this.conceptsService.getConceptsBySubject(subject._id)),
+      );
+      const concepts = conceptsBySubject.flat();
+
+      const subjectMap = new Map(
+        subjects.map((subject) => [subject._id.toString(), subject]),
+      );
+      const conceptMap = new Map(
+        concepts.map((concept) => [concept._id.toString(), concept]),
+      );
+
+      const todayDate = new Date(today);
+      const explanations: Record<
+        string,
+        { reason: string; priority: 'high' | 'medium' | 'low' }
+      > = {};
+
+      for (const session of plan.sessions) {
+        const conceptId = session.conceptId.toString();
+        const concept = conceptMap.get(conceptId);
+        if (!concept) continue;
+
+        const subject = subjectMap.get(concept.subjectId.toString());
+        if (!subject) continue;
+
+        const difficulty = concept.difficulty;
+        const isHighWeight = difficulty >= 4;
+        const examDate = subject.examDate;
+        const daysUntilExam = Math.ceil(
+          (examDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        const isBacklog = Boolean(subject.isBacklog);
+        const panicMode = Boolean(profile?.panicMode);
+
+        let priority: 'high' | 'medium' | 'low' = 'medium';
+        if (panicMode || isBacklog || isHighWeight || daysUntilExam <= 7) {
+          priority = 'high';
+        } else if (difficulty <= 2 && daysUntilExam > 30) {
+          priority = 'low';
+        }
+
+        const reasons: string[] = [];
+        if (panicMode) reasons.push('Panic mode prioritizes high-impact topics');
+        if (isBacklog) reasons.push('Backlog subject needs catch-up');
+        if (daysUntilExam <= 7) reasons.push('Exam is soon');
+        if (isHighWeight) reasons.push('Topic is high difficulty');
+        if (reasons.length === 0) {
+          reasons.push('Balanced scheduling based on difficulty and exam date');
+        }
+
+        explanations[conceptId] = {
+          reason: reasons.slice(0, 2).join('. '),
+          priority,
+        };
+      }
+
+      const base =
+        typeof (plan as any).toObject === 'function'
+          ? (plan as any).toObject()
+          : plan;
+
+      if (Object.keys(explanations).length === 0) {
+        return base;
+      }
+
+      return { ...base, explanations };
+    } catch (_err) {
+      return plan;
+    }
   }
 
-  async togglePanicMode(clerkId: string, enabled: boolean): Promise<void> {
+  async togglePanicMode(
+    clerkId: string,
+    enabled: boolean,
+  ): Promise<{ panicMode: boolean }> {
     const user = await this.usersService.getByClerkId(clerkId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    await this.profileService.togglePanic(user._id, enabled);
+    const profile = await this.profileService.togglePanic(user._id, enabled);
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+
+    return { panicMode: profile.panicMode };
   }
 }

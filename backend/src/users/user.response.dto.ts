@@ -2,10 +2,10 @@ import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class UserResponseDto {
   @IsString()
-  id!: string;
+  id: string;
 
   @IsString()
-  clerkId!: string;
+  clerkId: string;
 
   @IsString()
   @IsOptional()

@@ -45,7 +45,7 @@ export const FeedbackModal = ({ session, isOpen, onClose, onSubmit }: FeedbackMo
     if (!session) return;
 
     // Submit with API-aligned field names
-    await submitFeedback(session.id, {
+    await submitFeedback(session.id,session.conceptId, {
       actualMinutes,
       completionPercent: Math.round(completionScore * 100),
       difficultyRating, // This maps to difficultyFeedback in API

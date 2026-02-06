@@ -9,12 +9,16 @@ import { SubjectsStep } from '@/components/SubjectsStep';
 import { ConstraintsStep } from '@/components/ConstraintsStep';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@clerk/nextjs';
+import { api } from '@/lib/api-client';
+import { API_ROUTES } from '@/lib/api-routes';
 
 const Onboarding = () => {
     //   const navigate = useNavigate();
     const router = useRouter()
     const { state, setStep, updateProfile, completeOnboarding } = useOnboardingStore();
     const { setProfile } = useUserStore();
+    const { getToken } = useAuth();
 
     const [localSubjects, setLocalSubjects] = useState<Subject[]>([]);
 
@@ -29,7 +33,7 @@ const Onboarding = () => {
         setStep(3);
     };
 
-    const handleConstraintsSubmit = (data: {
+    const handleConstraintsSubmit = async (data: {
         dailyHours: number;
         dailyMinutes: number;
         fatigueThreshold: number;
@@ -49,6 +53,20 @@ const Onboarding = () => {
             subjects: localSubjects,
             createdAt: new Date(),
         };
+
+        try {
+            await api(API_ROUTES.PROFILE.SETUP, {
+                method: 'POST',
+                body: {
+                    dailyMinutes: data.dailyMinutes,
+                    fatigueThreshold: data.fatigueThreshold,
+                    preferredSlots: data.preferredSlots,
+                },
+                getToken,
+            });
+        } catch (err) {
+            console.log(err);
+        }
 
         setProfile(fullProfile);
         completeOnboarding();

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
-import {Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "next-themes";
+// import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
+import { ClerkLoading, ClerkProvider } from "@clerk/nextjs";
+import { AuthBootstrapper } from "@/components/auth/AuthBootstrapper";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
@@ -13,8 +17,8 @@ import { ThemeProvider } from "next-themes";
 //   subsets: ["latin"],
 // });
 
-const inter=Inter({
-  variable:"--font-inter"
+const inter = Inter({
+  variable: "--font-inter"
 })
 export const metadata: Metadata = {
   title: "SYLLABUS",
@@ -31,9 +35,16 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme='dark' enableSystem>
-          {children}
-        </ThemeProvider>
+        <ClerkProvider>
+            <ThemeProvider attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange>
+              <Toaster />
+              <AuthBootstrapper />
+              {children}
+            </ThemeProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

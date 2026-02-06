@@ -2,10 +2,10 @@ import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, Min } from 'class
 
 export class CreateSubjectDto {
   @IsString()
-  name!: string;
+  name: string;
 
   @IsDateString()
-  examDate!: string;
+  examDate: string;
 
   @IsBoolean()
   @IsOptional()

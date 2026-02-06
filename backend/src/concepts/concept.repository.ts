@@ -34,6 +34,10 @@ export class ConceptsRepository {
     return this.conceptModel.find({ _id: { $in: ids } }).exec();
   }
 
+  async findById(id: Types.ObjectId): Promise<ConceptDocument | null> {
+    return this.conceptModel.findById(id).exec();
+  }
+
   async findPrerequisites(
     conceptId: ConceptDocument['_id'],
   ): Promise<ConceptDocument['prerequisites']> {

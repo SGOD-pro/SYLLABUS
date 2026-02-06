@@ -9,8 +9,10 @@ import { PlannerModule } from './planner/planner.module';
 import { ConceptsModule } from './concepts/concept.module';
 import { SessionModule } from './sessions/session.module';
 import { AiModule } from './ai/ai.module';
+import { SyllabusModule } from './syllabus/syllabus.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { AuthModule } from './auth/auth.module';
     SessionModule,
     PlannerModule,
     AiModule,
+    SyllabusModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [AppService],

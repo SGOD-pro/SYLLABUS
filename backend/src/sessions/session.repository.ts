@@ -20,11 +20,29 @@ export class SessionRepository {
     private readonly sessionModel: Model<StudySessionDocument>,
   ) {}
 
-  async findByUserId(userId: string): Promise<StudySession[]> {
+  async findByUserId(userId: string){
     return this.sessionModel.find({ userId:new Types.ObjectId(userId) }).exec();
   }
 
-  async create(input: CreateStudySessionInput): Promise<StudySession> {
+  async create(input: CreateStudySessionInput){
     return this.sessionModel.create(input);
+  }
+
+  async countByUserIdAndDate(userId: string, date: string) {
+    return this.sessionModel
+      .countDocuments({ userId: new Types.ObjectId(userId), date })
+      .exec();
+  }
+
+  async findByIdAndUser(
+    sessionId: string,
+    userId: string,
+  ) {
+    return this.sessionModel
+      .findOne({
+        _id: new Types.ObjectId(sessionId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec();
   }
 }

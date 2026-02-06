@@ -2,18 +2,18 @@ import { IsArray, IsInt, IsString } from 'class-validator';
 
 export class ConceptResponseDto {
   @IsString()
-  id!: string;
+  id: string;
 
   @IsString()
-  name!: string;
+  name: string;
 
   @IsInt()
-  difficulty!: number;
+  difficulty: number;
 
   @IsInt()
-  estimatedMinutes!: number;
+  estimatedMinutes: number;
 
   @IsArray()
   @IsString({ each: true })
-  prerequisites!: string[];
+  prerequisites: string[];
 }

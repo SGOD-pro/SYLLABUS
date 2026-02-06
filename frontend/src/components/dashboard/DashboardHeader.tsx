@@ -1,18 +1,28 @@
 // Dashboard Header Component
 
 import { format } from 'date-fns';
+import { useState } from 'react';
 import { useUserStore, usePanicModeStore } from '@/store';
-import { usePanicMode } from '@/hooks/useStudyData';
+import { usePanicMode, useStudyPlan } from '@/hooks/useStudyData';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { AlertTriangle, BookOpen } from 'lucide-react';
+import { AlertTriangle, BookOpen, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ConceptFeedbackDialog } from '@/components/dashboard/ConceptFeedbackDialog';
 
 export const DashboardHeader = () => {
   const { profile } = useUserStore();
   const { isPanicMode, togglePanicMode } = usePanicMode();
+  const { sessions } = useStudyPlan();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const currentSession = sessions?.[0];
+  const currentConceptId = currentSession?.conceptId ?? null;
+  const currentConceptName = currentSession?.concept?.name ?? null;
+  const currentSessionId = currentSession?.id ?? null;
 
   const today = new Date();
   const initials = profile?.branch
@@ -53,6 +63,18 @@ export const DashboardHeader = () => {
             {/* Theme Toggle */}
             <ThemeToggle />
 
+            {/* Feedback */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFeedbackOpen(true)}
+              disabled={!currentConceptId}
+              className="hidden sm:inline-flex"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Feedback
+            </Button>
+
             {/* Panic Mode Toggle */}
             <div className="flex items-center gap-2">
               <span className={cn(
@@ -79,6 +101,14 @@ export const DashboardHeader = () => {
           </div>
         </div>
       </div>
+
+      <ConceptFeedbackDialog
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        conceptId={currentConceptId}
+        conceptName={currentConceptName}
+        sessionId={currentSessionId}
+      />
     </header>
   );
 };

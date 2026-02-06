@@ -8,14 +8,58 @@ import { FocusZone } from '@/components/dashboard/FocusZone';
 import { BrainColumn } from '@/components/dashboard/BrainColumn';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
+import { api } from '@/lib/api-client';
+import { API_ROUTES } from '@/lib/api-routes';
 
 const Dashboard = () => {
     //   const navigate = useNavigate();
     const router = useRouter()
-    const { profile } = useUserStore();
+    const { profile, updateProfile } = useUserStore();
     const { state: onboardingState } = useOnboardingStore();
-    const { isPanicMode } = usePanicModeStore();
+    const { isPanicMode, setPanicMode } = usePanicModeStore();
     const { fetchPlan } = useStudyPlan();
+    const { isLoaded, isSignedIn, getToken } = useAuth();
+
+    useEffect(() => {
+        if (!isLoaded || !isSignedIn || !profile) return;
+
+        let isMounted = true;
+
+        const run = async () => {
+            try {
+                const data = await api<{
+                    dailyMinutes: number;
+                    fatigueThreshold: number;
+                    preferredSlots?: string[];
+                    panicMode: boolean;
+                }>(API_ROUTES.PROFILE.GET, { getToken });
+
+                if (!isMounted) return;
+
+                const patch: Partial<UserProfile> = {};
+                if (typeof data.dailyMinutes === 'number') patch.dailyMinutes = data.dailyMinutes;
+                if (typeof data.fatigueThreshold === 'number') patch.fatigueThreshold = data.fatigueThreshold;
+                if (Array.isArray(data.preferredSlots)) patch.preferredSlots = data.preferredSlots as TimeSlot[];
+
+                if (Object.keys(patch).length > 0) {
+                    updateProfile(patch);
+                }
+
+                if (typeof data.panicMode === 'boolean') {
+                    setPanicMode(data.panicMode);
+                }
+            } catch (err) {
+                console.log(err);
+            }
+        };
+
+        run();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isLoaded, isSignedIn, getToken, profile, updateProfile, setPanicMode]);
 
     // Redirect to onboarding if not complete
     useEffect(() => {
